@@ -39,4 +39,12 @@ describe("StudentNFT", function () {
     expect(await nft.ownerOf(0n)).to.equal(minter.address);
     expect(await nft.ownerOf(1n)).to.equal(other.address);
   });
+
+  it("reverts when reading the URI of a nonexistent token", async function () {
+    const nft = await ethers.deployContract("StudentNFT", ["Student NFT", "SNFT"]);
+
+    await expect(nft.tokenURI(0n))
+      .to.be.revertedWithCustomError(nft, "ERC721NonexistentToken")
+      .withArgs(0n);
+  });
 });
