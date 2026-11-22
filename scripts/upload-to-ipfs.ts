@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { PinataSDK } from "pinata";
 
 const pinataJwt = process.env.PINATA_JWT?.trim();
@@ -9,9 +10,9 @@ if (!pinataJwt || !pinataGateway) {
 }
 
 const pinata = new PinataSDK({ pinataJwt, pinataGateway });
-const imageName = "Dog and Ethereum.png";
-const imageBytes = await readFile(new URL(`../assets/${imageName}`, import.meta.url));
-const image = new File([imageBytes], imageName, { type: "image/png" });
+const imagePath = process.argv[2] ?? join(import.meta.dirname, "..", "assets", "my-nft.png");
+const imageBytes = await readFile(imagePath);
+const image = new File([imageBytes], basename(imagePath), { type: "image/png" });
 const imageUpload = await pinata.upload.public.file(image);
 
 const metadata = {
