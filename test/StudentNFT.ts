@@ -25,4 +25,18 @@ describe("StudentNFT", function () {
       .to.emit(nft, "Minted")
       .withArgs(minter.address, 0n, uri);
   });
+
+  it("assigns sequential token IDs across different minters", async function () {
+    const [, minter, other] = await ethers.getSigners();
+    const nft = await ethers.deployContract("StudentNFT", ["Student NFT", "SNFT"]);
+    const uri = "ipfs://test-metadata";
+
+    const firstMint = await nft.connect(minter).mint(uri);
+    await firstMint.wait();
+    const secondMint = await nft.connect(other).mint(uri);
+    await secondMint.wait();
+
+    expect(await nft.ownerOf(0n)).to.equal(minter.address);
+    expect(await nft.ownerOf(1n)).to.equal(other.address);
+  });
 });
