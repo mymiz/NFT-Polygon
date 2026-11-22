@@ -34,5 +34,12 @@ export default defineConfig({
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
     },
+    polygon: {
+    type: "http",
+    chainType: "l1",
+    chainId: 137,
+    url: configVariable("POLYGON_RPC_URL"),
+    accounts: [configVariable("POLYGON_PRIVATE_KEY")],
+  },
   },
 });
