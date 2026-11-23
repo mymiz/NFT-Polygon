@@ -1,14 +1,18 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 import { network } from "hardhat";
 
-const tokenURI = process.env.NFT_TOKEN_URI?.trim();
-const contractAddress = process.env.NFT_CONTRACT_ADDRESS?.trim();
+const { ethers, networkName, networkConfig } = await network.create();
+const defaults = networkName === "polygon" && existsSync(".env")
+  ? (parseEnv(readFileSync(".env", "utf8")) as NodeJS.ProcessEnv)
+  : undefined;
+const tokenURI = (process.env.NFT_TOKEN_URI ?? defaults?.NFT_TOKEN_URI)?.trim();
+const contractAddress = (process.env.NFT_CONTRACT_ADDRESS ?? defaults?.NFT_CONTRACT_ADDRESS)?.trim();
 
 if (!tokenURI || !/^ipfs:\/\/\S+$/.test(tokenURI)) {
   throw new Error("Set NFT_TOKEN_URI to an ipfs:// URI for the metadata JSON.");
 }
-
-const { ethers, networkName, networkConfig } = await network.create();
 
 if (!contractAddress && networkName !== "localhost" && networkConfig.type !== "edr-simulated") {
   throw new Error("Set NFT_CONTRACT_ADDRESS to the deployed StudentNFT address on this network.");
