@@ -1,57 +1,94 @@
-# Sample Hardhat 3 Project (`mocha` and `ethers`)
+# NFT-Polygon
 
-This project showcases a Hardhat 3 project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+Учебный проект ERC-721 на Polygon PoS. Контракт `StudentNFT` выдаёт токен тому, кто вызвал `mint`, присваивает ID по порядку с `0`, сохраняет `tokenURI` и публикует событие `Minted`. Метаданные и картинка хранятся в IPFS через Pinata.
 
-To learn more about Hardhat 3, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3](https://hardhat.org/hardhat3-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+Стек проекта — Solidity, OpenZeppelin 5, TypeScript, Hardhat 3, Ignition и ethers.js 6. Тесты написаны на Mocha и Chai.
 
-## Project Overview
+## Результат в Polygon mainnet
 
-This example project includes:
+| Параметр | Значение |
+| --- | --- |
+| Сеть | Polygon PoS, chain ID `137` |
+| Коллекция | Student NFT (`SNFT`) |
+| Контракт | [`0x04AA635Bb7F1f4884dE36bC421491d3F203F917D`](https://polygonscan.com/address/0x04AA635Bb7F1f4884dE36bC421491d3F203F917D) |
+| `tokenId` | `0` |
+| Транзакция минта | [`0x84e5cf38180dbea582b795691564a6c848e8b8176f2f5c29af82341e8f393bc0`](https://polygonscan.com/tx/0x84e5cf38180dbea582b795691564a6c848e8b8176f2f5c29af82341e8f393bc0) |
+| `tokenURI` | `ipfs://bafkreidsjeme74tfiglvwvhn3xavk6iks5utfzkurmdtkfamphjh7anzfa` |
+| IPFS | [JSON-метаданные](https://copper-keen-carp-437.mypinata.cloud/ipfs/bafkreidsjeme74tfiglvwvhn3xavk6iks5utfzkurmdtkfamphjh7anzfa) · [Картинка](https://copper-keen-carp-437.mypinata.cloud/ipfs/bafybeifufnnd27gandfcfgkpwfn7dqnf7jggijovoq2gsj7no55saqkrje) |
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+## Структура проекта
 
-## Usage
+| Файл | Назначение |
+| --- | --- |
+| [`contracts/StudentNFT.sol`](contracts/StudentNFT.sol) | ERC-721, минт и счётчик `totalMinted()` |
+| [`test/StudentNFT.ts`](test/StudentNFT.ts) | Владелец и URI, событие `Minted`, последовательность ID для разных адресов и ошибка `ERC721NonexistentToken` |
+| [`scripts/upload-to-ipfs.ts`](scripts/upload-to-ipfs.ts) | Загрузка PNG и JSON в публичную сеть IPFS |
+| [`ignition/modules/StudentNFT.ts`](ignition/modules/StudentNFT.ts) | Деплой коллекции с именем `Student NFT` и символом `SNFT` |
+| [`scripts/mint-nft.ts`](scripts/mint-nft.ts) | Минт, чтение `tokenId` из события и проверка владельца и URI в контракте |
+| [`hardhat.config.ts`](hardhat.config.ts) | Плагины, настройки Solidity и подключение к сетям |
 
-### Running Tests
+## Установка и тесты
 
-To run all the tests in the project, execute the following command:
+Нужны Git и Node.js 22.18+ или 24 LTS. Команды выполняются из корня проекта.
 
-```shell
+```powershell
+npm ci
+npx hardhat build
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+![Вывод npx hardhat test — все четыре теста прошли](assets/hardhat-test.png)
 
-```shell
-npx hardhat test solidity
-npx hardhat test mocha
+## Загрузка в IPFS
+
+Для новой загрузки добавьте в локальный `.env` JWT от Pinata и домен своего шлюза.
+
+```dotenv
+PINATA_JWT=<ваш JWT>
+PINATA_GATEWAYS=example.mypinata.cloud
 ```
 
-### Make a deployment to Sepolia
-
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+```powershell
+node --env-file=.env scripts/upload-to-ipfs.ts assets/my-nft.png
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+Скрипт загружает картинку, записывает её CID в поле `image` метаданных и загружает JSON. Значение после `tokenURI =` содержит CID JSON и передаётся в `mint`.
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+## Деплой и минт
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+Проверить модуль Ignition можно во временной сети Hardhat.
 
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+```powershell
+npx hardhat ignition deploy ignition/modules/StudentNFT.ts --network hardhatMainnet
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+Для деплоя в Polygon сохраните RPC URL и приватный ключ учебного кошелька в зашифрованном keystore. Hardhat попросит ввести значения интерактивно.
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
+```powershell
+npx hardhat keystore set POLYGON_RPC_URL
+npx hardhat keystore set POLYGON_PRIVATE_KEY
+npx hardhat ignition deploy ignition/modules/StudentNFT.ts --network polygon
 ```
+
+Адрес из результата деплоя сохраняется в `ignition/deployments/chain-137/deployed_addresses.json`. Для минта укажите адрес нужного контракта и URI JSON в локальном `.env`. Ниже значения для коллекции и метаданных этого проекта.
+
+```dotenv
+NFT_CONTRACT_ADDRESS=0x04AA635Bb7F1f4884dE36bC421491d3F203F917D
+NFT_TOKEN_URI=ipfs://bafkreidsjeme74tfiglvwvhn3xavk6iks5utfzkurmdtkfamphjh7anzfa
+```
+
+```powershell
+npx hardhat run scripts/mint-nft.ts --network polygon
+```
+
+После подтверждения скрипт выводит `Token ID`, `Owner`, `tokenURI` и хеш транзакции. Деплой и каждый минт в Polygon mainnet расходуют POL на газ. `.env` исключён из Git.
+
+## Контрольные вопросы
+
+1. **Почему контракт хранит ссылку на метаданные?** Запись 1 МиБ заняла бы 32 768 слотов по 32 байта. Первичная запись в каждый холодный слот стоит примерно 22 100 газа. В сумме это **около 724 млн газа** только на запись данных. URI занимает несколько слотов и связывает токен с JSON и картинкой. [EIP-2200](https://eips.ethereum.org/EIPS/eip-2200) · [EIP-2929](https://eips.ethereum.org/EIPS/eip-2929)
+2. **Что даёт `ipfs://<CID>` по сравнению с `https://myserver.com/1.json`?** CID привязан к содержимому. Если JSON поменяется, у новой версии будет другой CID. Тот же CID можно получить через другой IPFS-шлюз. Доступность зависит от узлов, у которых есть данные. Без пинов временные копии могут исчезнуть, и тогда файл не загрузится. [Хранение файлов в IPFS](https://docs.ipfs.tech/how-to/pin-files/)
+3. **Что такое CID и почему у одной картинки могут быть разные CID?** CID — идентификатор, в который входит хеш блока и информация о его формате. Одинаковые байты дают одинаковый CID при одинаковых настройках импорта. Размер блоков, структура дерева, кодек или версия CID могут изменить итоговый идентификатор. [Документация IPFS о CID](https://docs.ipfs.tech/concepts/content-addressing/)
+4. **Зачем `_safeMint`?** При минте на адрес контракта `_safeMint` проверяет ответ `onERC721Received`. Если получатель не поддерживает этот вызов или отклоняет токен, транзакция откатывается. `_mint` пропускает эту проверку. [ERC-721](https://eips.ethereum.org/EIPS/eip-721)
+5. **Сколько газа ушло на деплой и минт?** Деплой использовал **1 198 504 газа**, минт токена `0` — **201 398 газа**. Деплой потребовал примерно в шесть раз больше газа, потому что исполняется конструктор и сохраняется байткод контракта. Минт вызывает функцию уже развёрнутого контракта, обновляет данные токена и пишет события. [Деплой](https://polygonscan.com/tx/0xfb8eccf4d4f382f3a0521e2bc09510803bb3c9bc32a3ad1a538b0bf1414518b0) · [Минт](https://polygonscan.com/tx/0x84e5cf38180dbea582b795691564a6c848e8b8176f2f5c29af82341e8f393bc0)
+6. **Где хранится приватный ключ?** В зашифрованном keystore Hardhat под именем `POLYGON_PRIVATE_KEY`. В конфиге указано только это имя через `configVariable(...)`. Keystore защищён паролем, а значения в `.env` хранятся открытым текстом. [Зашифрованное хранилище Hardhat](https://hardhat.org/docs/guides/configuration-variables#using-the-keystore)
+7. **Что делает Ignition при повторном деплое?** Ignition выполняет шаги модуля и сохраняет журнал, адреса и результаты транзакций. При повторном запуске с тем же ID деплоя и сохранённым журналом он продолжает с незавершённых шагов. Выполненный деплой контракта повторно не отправляется. [Деплой через Ignition](https://hardhat.org/ignition/docs/guides/deploy)
