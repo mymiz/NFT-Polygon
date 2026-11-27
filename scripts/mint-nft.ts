@@ -22,15 +22,21 @@ const nft = contractAddress
   ? await ethers.getContractAt("StudentNFT", contractAddress)
   : await ethers.deployContract("StudentNFT", ["Student NFT", "SNFT"]);
 
-if (contractAddress && (await nft.getDeployedCode()) === null) {
+if (!contractAddress) await nft.waitForDeployment();
+const deployedCode = await nft.getDeployedCode();
+if (deployedCode === null) {
   throw new Error("No contract is deployed at NFT_CONTRACT_ADDRESS on this network.");
 }
 
-await nft.waitForDeployment();
 const address = await nft.getAddress();
+const legacyArtifact = JSON.parse(readFileSync(new URL(
+  "../ignition/deployments/chain-137/artifacts/StudentNFT%23StudentNFT.json",
+  import.meta.url,
+), "utf8")) as { deployedBytecode: string };
+const price = deployedCode === legacyArtifact.deployedBytecode ? 0n : await nft.mintPrice();
 console.log("Contract:", address);
 
-const tx = await nft.mint(tokenURI);
+const tx = await nft.mint(tokenURI, { value: price });
 const receipt = await tx.wait();
 const minted = receipt?.logs
   .filter((log) => log.address === address)
