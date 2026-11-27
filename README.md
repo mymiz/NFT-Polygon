@@ -4,7 +4,11 @@
 
 Стек проекта — Solidity, OpenZeppelin 5, TypeScript, Hardhat 3, Ignition и ethers.js 6. Тесты написаны на Mocha и Chai.
 
+Текущая версия контракта берёт ровно `0,01 POL` за минт в Polygon и выпускает до `100` NFT. `withdraw()` переводит баланс владельцу контракта. Владелец может передать право управления, а отказ от владения заблокирован, чтобы сохранить возможность вывода средств.
+
 ## Результат в Polygon mainnet
+
+В таблице указан исходный деплой с бесплатным минтом. Платная версия требует отдельного деплоя.
 
 | Параметр | Значение |
 | --- | --- |
@@ -20,8 +24,8 @@
 
 | Файл | Назначение |
 | --- | --- |
-| [`contracts/StudentNFT.sol`](contracts/StudentNFT.sol) | ERC-721, минт и счётчик `totalMinted()` |
-| [`test/StudentNFT.ts`](test/StudentNFT.ts) | Владелец и URI, событие `Minted`, последовательность ID для разных адресов и ошибка `ERC721NonexistentToken` |
+| [`contracts/StudentNFT.sol`](contracts/StudentNFT.sol) | ERC-721, платный минт с лимитом выпуска и вывод средств владельцем |
+| [`test/StudentNFT.ts`](test/StudentNFT.ts) | Владелец, URI, событие `Minted`, ID, цена, лимит выпуска и права на вывод |
 | [`scripts/upload-to-ipfs.ts`](scripts/upload-to-ipfs.ts) | Загрузка PNG и JSON в публичную сеть IPFS |
 | [`ignition/modules/StudentNFT.ts`](ignition/modules/StudentNFT.ts) | Деплой коллекции с именем `Student NFT` и символом `SNFT` |
 | [`scripts/mint-nft.ts`](scripts/mint-nft.ts) | Минт, чтение `tokenId` из события и проверка владельца и URI в контракте |
@@ -37,7 +41,7 @@ npx hardhat build
 npx hardhat test
 ```
 
-![Вывод npx hardhat test — все четыре теста прошли](assets/hardhat-test.png)
+![Вывод npx hardhat test для четырёх базовых тестов](assets/hardhat-test.png)
 
 ## Загрузка в IPFS
 
@@ -62,18 +66,18 @@ node --env-file=.env scripts/upload-to-ipfs.ts assets/my-nft.png
 npx hardhat ignition deploy ignition/modules/StudentNFT.ts --network hardhatMainnet
 ```
 
-Для деплоя в Polygon сохраните RPC URL и приватный ключ учебного кошелька в зашифрованном keystore. Hardhat попросит ввести значения интерактивно.
+Для деплоя в Polygon сохраните RPC URL и приватный ключ учебного кошелька в зашифрованном keystore. Для платной версии используйте отдельный ID деплоя, чтобы сохранить историю исходной коллекции.
 
 ```powershell
 npx hardhat keystore set POLYGON_RPC_URL
 npx hardhat keystore set POLYGON_PRIVATE_KEY
-npx hardhat ignition deploy ignition/modules/StudentNFT.ts --network polygon
+npx hardhat ignition deploy ignition/modules/StudentNFT.ts --network polygon --deployment-id student-nft-paid-137
 ```
 
-Адрес из результата деплоя сохраняется в `ignition/deployments/chain-137/deployed_addresses.json`. Для минта укажите адрес нужного контракта и URI JSON в локальном `.env`. Ниже значения для коллекции и метаданных этого проекта.
+Адрес платной версии сохраняется в `ignition/deployments/student-nft-paid-137/deployed_addresses.json`. Для минта укажите адрес выбранного контракта и URI метаданных в локальном `.env`. Скрипт сам подставляет цену минта.
 
 ```dotenv
-NFT_CONTRACT_ADDRESS=0x04AA635Bb7F1f4884dE36bC421491d3F203F917D
+NFT_CONTRACT_ADDRESS=<адрес контракта>
 NFT_TOKEN_URI=ipfs://bafkreidsjeme74tfiglvwvhn3xavk6iks5utfzkurmdtkfamphjh7anzfa
 ```
 
